@@ -104,6 +104,19 @@ namespace std {
 			inline void __atomic_wake_all(const void* p) {
 				syscall(SYS_futex, p, FUTEX_WAKE_PRIVATE, INT_MAX, 0, 0, 0);
 			}
+			inline void __atomic_wait(const volatile void* p, int v) {
+				syscall(SYS_futex, p, FUTEX_WAIT, v, 0, 0, 0);
+			}
+			template < class Rep, class Period>
+			void __atomic_wait_timed(const volatile void* p, int v, const chrono::duration<Rep, Period>& t) {
+				syscall(SYS_futex, p, FUTEX_WAIT, v, __atomic_to_timespec(t), 0, 0);
+			}
+			inline void __atomic_wake_one(const volatile void* p) {
+				syscall(SYS_futex, p, FUTEX_WAKE, 1, 0, 0, 0);
+			}
+			inline void __atomic_wake_all(const volatile void* p) {
+				syscall(SYS_futex, p, FUTEX_WAKE, INT_MAX, 0, 0, 0);
+			}
 	#define __atomic_flag_fast_path
 #endif // __linux__
 
@@ -239,7 +252,7 @@ namespace std {
 				if (__atomic_expect(!success, 0)) {
 					bool const success2 = ((old & ~valubit) == 0) && atom.compare_exchange_weak(old, 0, order, memory_order_relaxed);
 					if (__atomic_expect(!success2, 0))
-						__clear_slow(old, order, notify);
+						__clear_slow(atom, old, order, notify);
 				}
 #else
 				atom.store(0, order);
@@ -376,7 +389,7 @@ namespace std {
 						old = atom.fetch_or(contbit, memory_order_relaxed) | contbit;
 						if ((old & valubit) == expectbit) 
 							break;
-						auto const delay = abs_time - clock::now()
+						auto const delay = abs_time - clock::now();
 						if (delay < 0) 
 							return false;
 						__atomic_wait_timed(&atom, old, delay);
