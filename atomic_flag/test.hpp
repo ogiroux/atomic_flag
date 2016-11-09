@@ -29,6 +29,7 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TEST_HPP
 #define TEST_HPP
 
+#include <thread>
 #include <mutex>
 
 #include <atomic>

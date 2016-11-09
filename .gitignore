@@ -59,3 +59,5 @@ atomic_flag/output.csv
 *.iobj
 *.ipdb
 *.obj
+
+atomic_flag/test
