@@ -325,24 +325,24 @@ namespace std {
 				return old == expectbit;
 			}
 
-			inline void wait(bool set, memory_order order = memory_order_seq_cst) noexcept {
+			inline void wait(bool set, memory_order order = memory_order_seq_cst) const noexcept {
 
 				bool const success = __wait_fast(atom, set, order);
 				if(__atomic_expect(!success,0))
 					__wait_slow(atom, set, order);
 			}
-			inline void wait(bool set, memory_order order = memory_order_seq_cst) volatile noexcept {
+			inline void wait(bool set, memory_order order = memory_order_seq_cst) const volatile noexcept {
 
 				bool const success = __wait_fast(atom, set, order);
 				if(__atomic_expect(!success,0))
 					__wait_slow(atom, set, order);
 			}
 
-			bool test(memory_order order = memory_order_seq_cst) noexcept {
+			bool test(memory_order order = memory_order_seq_cst) const noexcept {
 
 				return atom.load(order) & valubit;
 			}
-			bool test(memory_order order = memory_order_seq_cst) volatile noexcept {
+			bool test(memory_order order = memory_order_seq_cst) const volatile noexcept {
 
 				return atom.load(order) & valubit;
 			}

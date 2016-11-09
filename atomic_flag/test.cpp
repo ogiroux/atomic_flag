@@ -27,7 +27,7 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #ifdef WIN32
-#define _WIN32_WINNT 0x0602
+#define _WIN32_WINNT 0x0601
 #endif
 
 #include "test.hpp"
