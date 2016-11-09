@@ -36,50 +36,50 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 template <bool truly>
 struct dumb_mutex {
 
-	dumb_mutex() : locked(false) {
-	}
+    dumb_mutex() : locked(false) {
+    }
 
-	dumb_mutex(const dumb_mutex&) = delete;
-	dumb_mutex& operator=(const dumb_mutex&) = delete;
+    dumb_mutex(const dumb_mutex&) = delete;
+    dumb_mutex& operator=(const dumb_mutex&) = delete;
 
-	void lock() {
+    void lock() {
 
-		while (1) {
-			bool state = false;
-			if (locked.compare_exchange_weak(state, true, std::memory_order_acquire))
-				return;
-			while (locked.load(std::memory_order_relaxed))
-				if (!truly)
-					std::this_thread::yield();
-		};
-	}
+        while (1) {
+            bool state = false;
+            if (locked.compare_exchange_weak(state, true, std::memory_order_acquire))
+                return;
+            while (locked.load(std::memory_order_relaxed))
+                if (!truly)
+                    std::this_thread::yield();
+        };
+    }
 
-	void unlock() {
+    void unlock() {
 
-		locked.store(false, std::memory_order_release);
-	}
+        locked.store(false, std::memory_order_release);
+    }
 
 private:
-	std::atomic<bool> locked;
+    std::atomic<bool> locked;
 };
 
 #include "atomic_flag.hpp"
 struct alignas(64) atomic_flag_lock {
 
-	void lock() {
+    void lock() {
 
-		while (__atomic_expect(f.test_and_set(std::memory_order_acquire), 0))
-			//  ;                                       //this is the C++17 version
-			f.wait(false, std::memory_order_relaxed);   //this is the C++20 version maybe!
-	}
+        while (__atomic_expect(f.test_and_set(std::memory_order_acquire), 0))
+            //  ;                                       //this is the C++17 version
+            f.wait(false, std::memory_order_relaxed);   //this is the C++20 version maybe!
+    }
 
-	void unlock() {
+    void unlock() {
 
-		f.clear(std::memory_order_release);
-	}
+        f.clear(std::memory_order_release);
+    }
 
 private:
-	std::experimental::atomic_flag f = ATOMIC_FLAG_INIT;
+    std::experimental::atomic_flag f = ATOMIC_FLAG_INIT;
 };
 
 #ifdef WIN32

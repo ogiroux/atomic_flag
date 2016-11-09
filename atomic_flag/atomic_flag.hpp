@@ -26,6 +26,9 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
+#ifndef ATOMIC_FLAG_HPP
+#define ATOMIC_FLAG_HPP
+
 #include <atomic>
 #include <chrono>
 #include <thread>
@@ -45,408 +48,424 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif //__linux__
 
 namespace std {
-	namespace experimental {
-		inline namespace concurrency_v2 {
+    namespace experimental {
+        inline namespace concurrency_v2 {
 
 #ifdef __linux__
-			inline void __atomic_yield() { sched_yield(); }
+            inline void __atomic_yield() { sched_yield(); }
 #else
-			inline void __atomic_yield() { this_thread::yield(); }
+            inline void __atomic_yield() { this_thread::yield(); }
 #endif
 
 #if defined(_MSC_VER)
-	#if (defined(_M_X86) || defined(_M_X64))
-		#define __atomic_x86
-	#elif defined(_M_ARM)
-		#define __atomic_arm
-	#endif
+#if (defined(_M_X86) || defined(_M_X64))
+#define __atomic_x86
+#elif defined(_M_ARM)
+#define __atomic_arm
+#endif
 #elif defined(__GNUC__) 
-	#if (defined(__i386__) || defined(__x86_64__))
-		#define __atomic_x86
-	#elif defined(__arm__)
-		#define __atomic_arm
-	#endif
+#if (defined(__i386__) || defined(__x86_64__))
+#define __atomic_x86
+#elif defined(__arm__)
+#define __atomic_arm
+#endif
 #endif
 
 #ifdef __GNUC__
-	#define __atomic_gcc_inline __attribute__((always_inline))
-	#define __atomic_gcc_dont_inline __attribute__((noinline))
+#define __atomic_gcc_inline __attribute__((always_inline))
+#define __atomic_gcc_dont_inline __attribute__((noinline))
 #else
-	#define __atomic_gcc_inline inline
-	#define __atomic_gcc_dont_inline
+#define __atomic_gcc_inline inline
+#define __atomic_gcc_dont_inline
 #endif
 
 #if defined(__GNUC__)
-	#define __atomic_expect __builtin_expect
+#define __atomic_expect __builtin_expect
 #else
-	#define __atomic_expect(c,e) (c)
+#define __atomic_expect(c,e) (c)
 #endif
 
 #ifdef __linux__
-			// On Linux, we make use of the kernel memory wait operations. These have been available for a long time.
-			template < class Rep, class Period>
-			timespec __atomic_to_timespec(chrono::duration<Rep, Period> const& delta) {
-				struct timespec ts;
-				ts.tv_sec = static_cast<long>(chrono::duration_cast<chrono::seconds>(delta).count());
-				ts.tv_nsec = static_cast<long>(chrono::duration_cast<chrono::nanoseconds>(delta).count());
-				return ts;
-			}
-			inline void __atomic_wait(const void* p, int v) {
-				syscall(SYS_futex, p, FUTEX_WAIT_PRIVATE, v, 0, 0, 0);
-			}
-			template < class Rep, class Period>
-			void __atomic_wait_timed(const void* p, int v, const chrono::duration<Rep, Period>& t) {
-				syscall(SYS_futex, p, FUTEX_WAIT_PRIVATE, v, __atomic_to_timespec(t), 0, 0);
-			}
-			inline void __atomic_wake_one(const void* p) {
-				syscall(SYS_futex, p, FUTEX_WAKE_PRIVATE, 1, 0, 0, 0);
-			}
-			inline void __atomic_wake_all(const void* p) {
-				syscall(SYS_futex, p, FUTEX_WAKE_PRIVATE, INT_MAX, 0, 0, 0);
-			}
-			inline void __atomic_wait(const volatile void* p, int v) {
-				syscall(SYS_futex, p, FUTEX_WAIT, v, 0, 0, 0);
-			}
-			template < class Rep, class Period>
-			void __atomic_wait_timed(const volatile void* p, int v, const chrono::duration<Rep, Period>& t) {
-				syscall(SYS_futex, p, FUTEX_WAIT, v, __atomic_to_timespec(t), 0, 0);
-			}
-			inline void __atomic_wake_one(const volatile void* p) {
-				syscall(SYS_futex, p, FUTEX_WAKE, 1, 0, 0, 0);
-			}
-			inline void __atomic_wake_all(const volatile void* p) {
-				syscall(SYS_futex, p, FUTEX_WAKE, INT_MAX, 0, 0, 0);
-			}
-	#define __atomic_flag_fast_path
+            // On Linux, we make use of the kernel memory wait operations. These have been available for a long time.
+            template < class Rep, class Period>
+            timespec __atomic_to_timespec(chrono::duration<Rep, Period> const& delta) {
+                struct timespec ts;
+                ts.tv_sec = static_cast<long>(chrono::duration_cast<chrono::seconds>(delta).count());
+                ts.tv_nsec = static_cast<long>(chrono::duration_cast<chrono::nanoseconds>(delta).count());
+                return ts;
+            }
+            inline void __atomic_wait(const void* p, int v) {
+                syscall(SYS_futex, p, FUTEX_WAIT_PRIVATE, v, 0, 0, 0);
+            }
+            template < class Rep, class Period>
+            void __atomic_wait_timed(const void* p, int v, const chrono::duration<Rep, Period>& t) {
+                syscall(SYS_futex, p, FUTEX_WAIT_PRIVATE, v, __atomic_to_timespec(t), 0, 0);
+            }
+            inline void __atomic_wake_one(const void* p) {
+                syscall(SYS_futex, p, FUTEX_WAKE_PRIVATE, 1, 0, 0, 0);
+            }
+            inline void __atomic_wake_all(const void* p) {
+                syscall(SYS_futex, p, FUTEX_WAKE_PRIVATE, INT_MAX, 0, 0, 0);
+            }
+            inline void __atomic_wait(const volatile void* p, int v) {
+                syscall(SYS_futex, p, FUTEX_WAIT, v, 0, 0, 0);
+            }
+            template < class Rep, class Period>
+            void __atomic_wait_timed(const volatile void* p, int v, const chrono::duration<Rep, Period>& t) {
+                syscall(SYS_futex, p, FUTEX_WAIT, v, __atomic_to_timespec(t), 0, 0);
+            }
+            inline void __atomic_wake_one(const volatile void* p) {
+                syscall(SYS_futex, p, FUTEX_WAKE, 1, 0, 0, 0);
+            }
+            inline void __atomic_wake_all(const volatile void* p) {
+                syscall(SYS_futex, p, FUTEX_WAKE, INT_MAX, 0, 0, 0);
+            }
+#define __atomic_flag_fast_path
 #endif // __linux__
 
 #if defined(WIN32) && _WIN32_WINNT >= 0x0602
-			// On Windows, we make use of the kernel memory wait operations as well. These first became available with Windows 8.
-			template <class V>
-			void __atomic_wait(const void* p, V v) {
-				WaitOnAddress((PVOID)p, (PVOID)&v, sizeof(v), -1);
-			}
-			template <class V, class Rep, class Period>
-			void __atomic_wait_timed(const void* p, V v, chrono::duration<Rep, Period> const& delta) {
-				WaitOnAddress((PVOID)p, (PVOID)&v, sizeof(v), chrono::duration_cast<chrono::milliseconds>(delta).count());
-			}
-			inline void __atomic_wake_one(const void* p) {
-				WakeByAddressSingle((PVOID)p);
-			}
-			inline void __atomic_wake_all(const void* p) {
-				WakeByAddressAll((PVOID)p);
-			}
-	#define __atomic_flag_fast_path
+            // On Windows, we make use of the kernel memory wait operations as well. These first became available with Windows 8.
+            template <class V>
+            void __atomic_wait(const void* p, V v) {
+                WaitOnAddress((PVOID)p, (PVOID)&v, sizeof(v), -1);
+            }
+            template <class V, class Rep, class Period>
+            void __atomic_wait_timed(const void* p, V v, chrono::duration<Rep, Period> const& delta) {
+                WaitOnAddress((PVOID)p, (PVOID)&v, sizeof(v), chrono::duration_cast<chrono::milliseconds>(delta).count());
+            }
+            inline void __atomic_wake_one(const void* p) {
+                WakeByAddressSingle((PVOID)p);
+            }
+            inline void __atomic_wake_all(const void* p) {
+                WakeByAddressAll((PVOID)p);
+            }
+            // On Windows, we make use of the kernel memory wait operations as well. These first became available with Windows 8.
+            template <class V>
+            void __atomic_wait(const volatile void* p, V v) {
+                WaitOnAddress((PVOID)p, (PVOID)&v, sizeof(v), -1);
+            }
+            template <class V, class Rep, class Period>
+            void __atomic_wait_timed(const volatile void* p, V v, chrono::duration<Rep, Period> const& delta) {
+                WaitOnAddress((PVOID)p, (PVOID)&v, sizeof(v), chrono::duration_cast<chrono::milliseconds>(delta).count());
+            }
+            inline void __atomic_wake_one(const volatile void* p) {
+                WakeByAddressSingle((PVOID)p);
+            }
+            inline void __atomic_wake_all(const volatile void* p) {
+                WakeByAddressAll((PVOID)p);
+            }
+#define __atomic_flag_fast_path
 #endif // defined(WIN32) && _WIN32_WINNT >= 0x0602
 
-//#undef __atomic_flag_fast_path
+            //#undef __atomic_flag_fast_path
 
-			// A simple exponential back-off helper that is designed to cover the space between (1<<__magic_number_3) and __magic_number_4
-			class __atomic_exponential_backoff {
-				int microseconds = 50;
-			public:
-				void sleep(int us = 0) {
-					if (us != 0)
-						microseconds = us;
-					this_thread::sleep_for(chrono::microseconds(microseconds));
-					// Avoiding the use of std::min here, to keep includes minimal
-					auto next_microseconds = microseconds + (microseconds >> 2);
-					microseconds = next_microseconds < 2048 ? next_microseconds : 2048;
-				}
-			};
+                        // A simple exponential back-off helper that is designed to cover the space between (1<<__magic_number_3) and __magic_number_4
+            class __atomic_exponential_backoff {
+                int microseconds = 50;
+            public:
+                void sleep(int us = 0) {
+                    if (us != 0)
+                        microseconds = us;
+                    this_thread::sleep_for(chrono::microseconds(microseconds));
+                    // Avoiding the use of std::min here, to keep includes minimal
+                    auto next_microseconds = microseconds + (microseconds >> 2);
+                    microseconds = next_microseconds < 2048 ? next_microseconds : 2048;
+                }
+            };
 
-			enum class atomic_notify {
-				all, one, none
-			};
+            enum class atomic_notify {
+                all, one, none
+            };
 
-			struct atomic_flag {
+            struct atomic_flag {
 
-				typedef uint32_t base_t;
+                typedef uint32_t base_t;
 
-				static constexpr base_t valubit = 1;
+                static constexpr base_t valubit = 1;
 #ifdef __atomic_flag_fast_path
-				static constexpr base_t contbit = 2;
-				static constexpr base_t lockbit = 4;
+                static constexpr base_t contbit = 2;
+                static constexpr base_t lockbit = 4;
 #endif
 
-				mutable std::atomic<base_t> atom;
+                mutable std::atomic<base_t> atom;
 
 
 #ifdef __atomic_flag_fast_path
-				template <class A>
-				__atomic_gcc_dont_inline static bool __test_and_set_slow(A& atom, base_t old, memory_order order, atomic_notify notify) noexcept {
-					while ((old & valubit) == 0) {
-						old &= contbit;
-						base_t const lock = (old & contbit ? lockbit : 0);
-						if (atom.compare_exchange_weak(old, valubit | lock, order, memory_order_relaxed)) {
-							if (lock) {
-								switch (notify) {
-								case atomic_notify::all: __atomic_wake_all(&atom); break;
-								case atomic_notify::one: __atomic_wake_one(&atom); break;
-								case atomic_notify::none: break;
-								}
-								atom.fetch_and(~lock, memory_order_relaxed);
-							}
-							return false;
-						}
-					}
-					return true;
-				}
+                template <class A>
+                __atomic_gcc_dont_inline static bool __test_and_set_slow(A& atom, base_t old, memory_order order, atomic_notify notify) noexcept {
+                    while ((old & valubit) == 0) {
+                        old &= contbit;
+                        base_t const lock = (old & contbit ? lockbit : 0);
+                        if (atom.compare_exchange_weak(old, valubit | lock, order, memory_order_relaxed)) {
+                            if (lock) {
+                                switch (notify) {
+                                case atomic_notify::all: __atomic_wake_all(&atom); break;
+                                case atomic_notify::one: __atomic_wake_one(&atom); break;
+                                case atomic_notify::none: break;
+                                }
+                                atom.fetch_and(~lock, memory_order_relaxed);
+                            }
+                            return false;
+                        }
+                    }
+                    return true;
+                }
 #endif
 
-				template <class A>
-				__atomic_gcc_inline static bool __test_and_set(A& atom, memory_order order, atomic_notify notify) noexcept {
-					base_t old = 0;
-					bool const success = atom.compare_exchange_weak(old, valubit, order, memory_order_relaxed);
-					bool retcode = (old & valubit) == 1;
+                template <class A>
+                __atomic_gcc_inline static bool __test_and_set(A& atom, memory_order order, atomic_notify notify) noexcept {
+                    base_t old = 0;
+                    bool const success = atom.compare_exchange_weak(old, valubit, order, memory_order_relaxed);
+                    bool retcode = (old & valubit) == 1;
 #ifdef __atomic_flag_fast_path
-					if(__atomic_expect(!success && !retcode,0))
-						retcode = __test_and_set_slow(atom, old, order, notify);
+                    if (__atomic_expect(!success && !retcode, 0))
+                        retcode = __test_and_set_slow(atom, old, order, notify);
 #endif
 #ifdef __atomic_arm
-					if(!retcode) {
-						__asm__ __volatile__(
-							"   dsb\n"
-							"   sev"
-						);
-					}
+                    if (!retcode) {
+                        __asm__ __volatile__(
+                            "   dsb\n"
+                            "   sev"
+                        );
+                    }
 #endif
-					return retcode;
-				}
+                    return retcode;
+                }
 
-				inline bool test_and_set(memory_order order = memory_order_seq_cst, atomic_notify notify = atomic_notify::all) noexcept {
+                inline bool test_and_set(memory_order order = memory_order_seq_cst, atomic_notify notify = atomic_notify::all) noexcept {
 
-					return __test_and_set(atom, order, notify);
-				}
-				inline bool test_and_set(memory_order order = memory_order_seq_cst, atomic_notify notify = atomic_notify::all) volatile noexcept {
+                    return __test_and_set(atom, order, notify);
+                }
+                inline bool test_and_set(memory_order order = memory_order_seq_cst, atomic_notify notify = atomic_notify::all) volatile noexcept {
 
-					return __test_and_set(atom, order, notify);
-				}
+                    return __test_and_set(atom, order, notify);
+                }
 
 #ifdef __atomic_flag_fast_path
-				template <class A>
-				__atomic_gcc_dont_inline static void __clear_slow(A& atom, base_t old, memory_order order, atomic_notify notify) noexcept {
-				while (1) {
-					old &= (contbit | valubit);
-					base_t const lock = (old & contbit) ? lockbit : 0;
-					if (atom.compare_exchange_weak(old, lock, order, memory_order_relaxed)) {
-						if (lock) {
-							switch (notify) {
-							case atomic_notify::all: __atomic_wake_all(&atom); break;
-							case atomic_notify::one: __atomic_wake_one(&atom); break;
-							case atomic_notify::none: break;
-							}
-							atom.fetch_and(~lock, memory_order_relaxed);
-						}
-						break;
-					}
-				}
-			}
+                template <class A>
+                __atomic_gcc_dont_inline static void __clear_slow(A& atom, base_t old, memory_order order, atomic_notify notify) noexcept {
+                    while (1) {
+                        old &= (contbit | valubit);
+                        base_t const lock = (old & contbit) ? lockbit : 0;
+                        if (atom.compare_exchange_weak(old, lock, order, memory_order_relaxed)) {
+                            if (lock) {
+                                switch (notify) {
+                                case atomic_notify::all: __atomic_wake_all(&atom); break;
+                                case atomic_notify::one: __atomic_wake_one(&atom); break;
+                                case atomic_notify::none: break;
+                                }
+                                atom.fetch_and(~lock, memory_order_relaxed);
+                            }
+                            break;
+                        }
+                    }
+                }
 #endif
 
-				template <class A>
-				__atomic_gcc_inline static void __clear(A& atom, memory_order order, atomic_notify notify) noexcept {
+                template <class A>
+                __atomic_gcc_inline static void __clear(A& atom, memory_order order, atomic_notify notify) noexcept {
 #ifdef __atomic_flag_fast_path
-				base_t old = valubit;
-				bool const success = atom.compare_exchange_weak(old, 0, order, memory_order_relaxed);
-				if (__atomic_expect(!success, 0)) {
-					bool const success2 = ((old & ~valubit) == 0) && atom.compare_exchange_weak(old, 0, order, memory_order_relaxed);
-					if (__atomic_expect(!success2, 0))
-						__clear_slow(atom, old, order, notify);
-				}
+                    base_t old = valubit;
+                    bool const success = atom.compare_exchange_weak(old, 0, order, memory_order_relaxed);
+                    if (__atomic_expect(!success, 0)) {
+                        bool const success2 = ((old & ~valubit) == 0) && atom.compare_exchange_weak(old, 0, order, memory_order_relaxed);
+                        if (__atomic_expect(!success2, 0))
+                            __clear_slow(atom, old, order, notify);
+                    }
 #else
-				atom.store(0, order);
+                    atom.store(0, order);
 #endif
 #ifdef __atomic_arm
-				__asm__ __volatile__(
-					"   dsb\n"
-					"   sev"
-				);
+                    __asm__ __volatile__(
+                        "   dsb\n"
+                        "   sev"
+                    );
 #endif
-			}
+                }
 
-			inline void clear(memory_order order = memory_order_seq_cst, atomic_notify notify = atomic_notify::all) noexcept {
+                inline void clear(memory_order order = memory_order_seq_cst, atomic_notify notify = atomic_notify::all) noexcept {
 
-				__clear(atom, order, notify);
-			}
+                    __clear(atom, order, notify);
+                }
 
-			inline void clear(memory_order order = memory_order_seq_cst, atomic_notify notify = atomic_notify::all) volatile noexcept {
+                inline void clear(memory_order order = memory_order_seq_cst, atomic_notify notify = atomic_notify::all) volatile noexcept {
 
-				__clear(atom, order, notify);
-			}
+                    __clear(atom, order, notify);
+                }
 
-			template <class A>
-			__atomic_gcc_dont_inline static void __wait_slow(A& atom, bool set, memory_order order) noexcept {
+                template <class A>
+                __atomic_gcc_dont_inline static void __wait_slow(A& atom, bool set, memory_order order) noexcept {
 
-				base_t old = atom.load(order);
-				base_t const expectbit = (set ? valubit : 0);
-				if ((old & valubit) != expectbit) {
-					__atomic_exponential_backoff b;
+                    base_t old = atom.load(order);
+                    base_t const expectbit = (set ? valubit : 0);
+                    if ((old & valubit) != expectbit) {
+                        __atomic_exponential_backoff b;
 #ifdef __atomic_flag_fast_path
-					for (int i = 0; i < 2; ++i) {
+                        for (int i = 0; i < 2; ++i) {
 #else
-                                        while(1) {
+                        while (1) {
 #endif
-						b.sleep();
-						old = atom.load(order);
-						if ((old & valubit) == expectbit) break;
-					}
-				}
+                            b.sleep();
+                            old = atom.load(order);
+                            if ((old & valubit) == expectbit) break;
+                        }
+                    }
 #ifdef __atomic_flag_fast_path
-				if ((old & valubit) != expectbit) {
-					while(1) {
-						old = atom.fetch_or(contbit, memory_order_relaxed) | contbit;
-						if ((old & valubit) == expectbit) break;
-						__atomic_wait(&atom, old);
-						old = atom.load(order);
-						if ((old & valubit) == expectbit) break;
-					}
-				}
-				while (old & lockbit)
-					old = atom.load(memory_order_relaxed);
+                    if ((old & valubit) != expectbit) {
+                        while (1) {
+                            old = atom.fetch_or(contbit, memory_order_relaxed) | contbit;
+                            if ((old & valubit) == expectbit) break;
+                            __atomic_wait(&atom, old);
+                            old = atom.load(order);
+                            if ((old & valubit) == expectbit) break;
+                        }
+                    }
+                    while (old & lockbit)
+                        old = atom.load(memory_order_relaxed);
 #endif
-			}
+                }
 
-			template <class A>
-			__atomic_gcc_inline static bool __wait_fast(A& atom, bool set, memory_order order) noexcept {
+                template <class A>
+                __atomic_gcc_inline static bool __wait_fast(A& atom, bool set, memory_order order) noexcept {
 
-				base_t old = atom.load(order);
-				base_t const expectbit = (set ? valubit : 0);
-				if (__atomic_expect(old == expectbit, 1))
-					return true;
+                    base_t old = atom.load(order);
+                    base_t const expectbit = (set ? valubit : 0);
+                    if (__atomic_expect(old == expectbit, 1))
+                        return true;
 #ifdef __atomic_arm
-				if ((old & valubit) != expectbit)                                
-					for (int i = 0; i < 4; ++i) {
-						base_t const tmp = old;
-						__asm__ __volatile__(
-								"ldrex %0, [%1]\n"
-								"cmp %0, %2\n"
-								"it eq\n"
-								"wfeeq.n\n"
-								"nop.w\n"
-								: "=&r" (old) : "r" (&atom), "r" (tmp) : "cc"
-							);
-							if ((old & valubit) == expectbit) { atomic_thread_fence(order); break; }
-					}
+                    if ((old & valubit) != expectbit)
+                        for (int i = 0; i < 4; ++i) {
+                            base_t const tmp = old;
+                            __asm__ __volatile__(
+                                "ldrex %0, [%1]\n"
+                                "cmp %0, %2\n"
+                                "it eq\n"
+                                "wfeeq.n\n"
+                                "nop.w\n"
+                                : "=&r" (old) : "r" (&atom), "r" (tmp) : "cc"
+                            );
+                            if ((old & valubit) == expectbit) { atomic_thread_fence(order); break; }
+                        }
 #endif
-				if ((old & valubit) != expectbit)
-					for (int i = 0; i < 32; ++i) {
-						__atomic_yield();
-						old = atom.load(order);
-						if ((old & valubit) == expectbit) break;
-					}
-				return old == expectbit;
-			}
+                    if ((old & valubit) != expectbit)
+                        for (int i = 0; i < 32; ++i) {
+                            __atomic_yield();
+                            old = atom.load(order);
+                            if ((old & valubit) == expectbit) break;
+                        }
+                    return old == expectbit;
+                }
 
-			inline void wait(bool set, memory_order order = memory_order_seq_cst) const noexcept {
+                inline void wait(bool set, memory_order order = memory_order_seq_cst) const noexcept {
 
-				bool const success = __wait_fast(atom, set, order);
-				if(__atomic_expect(!success,0))
-					__wait_slow(atom, set, order);
-			}
-			inline void wait(bool set, memory_order order = memory_order_seq_cst) const volatile noexcept {
+                    bool const success = __wait_fast(atom, set, order);
+                    if (__atomic_expect(!success, 0))
+                        __wait_slow(atom, set, order);
+                }
+                inline void wait(bool set, memory_order order = memory_order_seq_cst) const volatile noexcept {
 
-				bool const success = __wait_fast(atom, set, order);
-				if(__atomic_expect(!success,0))
-					__wait_slow(atom, set, order);
-			}
+                    bool const success = __wait_fast(atom, set, order);
+                    if (__atomic_expect(!success, 0))
+                        __wait_slow(atom, set, order);
+                }
 
-			bool test(memory_order order = memory_order_seq_cst) const noexcept {
+                bool test(memory_order order = memory_order_seq_cst) const noexcept {
 
-				return atom.load(order) & valubit;
-			}
-			bool test(memory_order order = memory_order_seq_cst) const volatile noexcept {
+                    return atom.load(order) & valubit;
+                }
+                bool test(memory_order order = memory_order_seq_cst) const volatile noexcept {
 
-				return atom.load(order) & valubit;
-			}
+                    return atom.load(order) & valubit;
+                }
 
-			using clock = conditional<chrono::high_resolution_clock::is_steady,
-				chrono::high_resolution_clock, chrono::steady_clock>::type;
+                using clock = conditional<chrono::high_resolution_clock::is_steady,
+                    chrono::high_resolution_clock, chrono::steady_clock>::type;
 
-			template <class A, class Clock, class Duration>
-			__atomic_gcc_dont_inline static bool __wait_slow_timed(A& atom, bool set, chrono::time_point<Clock, Duration> const& abs_time, memory_order order) noexcept {
+                template <class A, class Clock, class Duration>
+                __atomic_gcc_dont_inline static bool __wait_slow_timed(A& atom, bool set, chrono::time_point<Clock, Duration> const& abs_time, memory_order order) noexcept {
 
-				base_t old = atom.load(order);
-				base_t const expectbit = (set ? valubit : 0);
-				if ((old & valubit) != expectbit) {
-					__atomic_exponential_backoff b;
+                    base_t old = atom.load(order);
+                    base_t const expectbit = (set ? valubit : 0);
+                    if ((old & valubit) != expectbit) {
+                        __atomic_exponential_backoff b;
 #ifdef __atomic_flag_fast_path
-					for (int i = 0; i < 2; ++i) {
+                        for (int i = 0; i < 2; ++i) {
 #else
-					while(1) {
+                        while (1) {
 #endif
-						if (clock::now() > abs_time) 
-							return false;
-						b.sleep();
-						old = atom.load(order);
-						if ((old & valubit) == expectbit) 
-							break;
-					}
-				}
+                            if (clock::now() > abs_time)
+                                return false;
+                            b.sleep();
+                            old = atom.load(order);
+                            if ((old & valubit) == expectbit)
+                                break;
+                        }
+                    }
 #ifdef __atomic_flag_fast_path
-				if ((old & valubit) != expectbit) {
-					while(1) {
-						old = atom.fetch_or(contbit, memory_order_relaxed) | contbit;
-						if ((old & valubit) == expectbit) 
-							break;
-						auto const delay = abs_time - clock::now();
-						if (delay < 0) 
-							return false;
-						__atomic_wait_timed(&atom, old, delay);
-						old = atom.load(order);
-						if ((old & valubit) == expectbit) 
-							break;
-					}
-				}
-				while (old & lockbit)
-					old = atom.load(memory_order_relaxed);
+                    if ((old & valubit) != expectbit) {
+                        while (1) {
+                            old = atom.fetch_or(contbit, memory_order_relaxed) | contbit;
+                            if ((old & valubit) == expectbit)
+                                break;
+                            auto const delay = abs_time - clock::now();
+                            if (delay < 0)
+                                return false;
+                            __atomic_wait_timed(&atom, old, delay);
+                            old = atom.load(order);
+                            if ((old & valubit) == expectbit)
+                                break;
+                        }
+                    }
+                    while (old & lockbit)
+                        old = atom.load(memory_order_relaxed);
 #endif
-				return true;
-			}
+                    return true;
+                }
 
-			template <class Clock, class Duration>
-			bool wait_until(bool set, chrono::time_point<Clock, Duration> const& abs_time, memory_order order = memory_order_seq_cst) const {
+                template <class Clock, class Duration>
+                bool wait_until(bool set, chrono::time_point<Clock, Duration> const& abs_time, memory_order order = memory_order_seq_cst) const {
 
-				bool success = __wait_fast(atom, set, order);
-				if(__atomic_expect(!success,0))
-					success = __wait_slow_timed(atom, set, order, abs_time);
-				return success;
-			}
-			template <class Clock, class Duration>
-			bool wait_until(bool set, chrono::time_point<Clock, Duration> const& abs_time, memory_order order = memory_order_seq_cst) const volatile {
+                    bool success = __wait_fast(atom, set, order);
+                    if (__atomic_expect(!success, 0))
+                        success = __wait_slow_timed(atom, set, order, abs_time);
+                    return success;
+                }
+                template <class Clock, class Duration>
+                bool wait_until(bool set, chrono::time_point<Clock, Duration> const& abs_time, memory_order order = memory_order_seq_cst) const volatile {
 
-				bool success = __wait_fast(atom, set, order);
-				if(__atomic_expect(!success,0))
-					success = __wait_slow_timed(atom, set, order, abs_time);
-				return success;
-			}
-			template <class Rep, class Period>
-			bool wait_for(bool set, chrono::duration<Rep, Period> const& rel_time, memory_order order = memory_order_seq_cst) const {
+                    bool success = __wait_fast(atom, set, order);
+                    if (__atomic_expect(!success, 0))
+                        success = __wait_slow_timed(atom, set, order, abs_time);
+                    return success;
+                }
+                template <class Rep, class Period>
+                bool wait_for(bool set, chrono::duration<Rep, Period> const& rel_time, memory_order order = memory_order_seq_cst) const {
 
-				bool success = __wait_fast(atom, set, order);
-				if(__atomic_expect(!success,0))
-					success = __wait_slow_timed(atom, set, order, clock::now() + rel_time);
-				return success;
-			}
-			template <class Rep, class Period>
-			bool wait_for(bool set, chrono::duration<Rep, Period> const& rel_time, memory_order order = memory_order_seq_cst) const volatile {
-				
-				bool success = __wait_fast(atom, set, order);
-				if(__atomic_expect(!success,0))
-					success = __wait_slow_timed(atom, set, order, clock::now() + rel_time);
-				return success;
-			}
+                    bool success = __wait_fast(atom, set, order);
+                    if (__atomic_expect(!success, 0))
+                        success = __wait_slow_timed(atom, set, order, clock::now() + rel_time);
+                    return success;
+                }
+                template <class Rep, class Period>
+                bool wait_for(bool set, chrono::duration<Rep, Period> const& rel_time, memory_order order = memory_order_seq_cst) const volatile {
 
-			atomic_flag(base_t init) noexcept : atom(init) { }
-			atomic_flag() noexcept = default;
-			atomic_flag(const atomic_flag&) = delete;
-			atomic_flag& operator=(const atomic_flag&) = delete;
-//			atomic_flag& operator=(const atomic_flag&) volatile = delete;
-				};
+                    bool success = __wait_fast(atom, set, order);
+                    if (__atomic_expect(!success, 0))
+                        success = __wait_slow_timed(atom, set, order, clock::now() + rel_time);
+                    return success;
+                }
 
-		//#define ATOMIC_FLAG_INIT 0
+                atomic_flag(base_t init) noexcept : atom(init) { }
+                atomic_flag() noexcept = default;
+                atomic_flag(const atomic_flag&) = delete;
+                atomic_flag& operator=(const atomic_flag&) = delete;
+                //			atomic_flag& operator=(const atomic_flag&) volatile = delete;
+            };
 
-			} // namespace concurrency_v2
-		} // namespace experimental
-	} // namespace std
+            //#define ATOMIC_FLAG_INIT 0
 
+        } // namespace concurrency_v2
+    } // namespace experimental
+} // namespace std
+
+#endif //ATOMIC_FLAG_HPP
