@@ -128,7 +128,6 @@ namespace std {
 
 //#undef __atomic_flag_fast_path
 
-#if defined(__arm__) || defined(_MSC_VER) || !defined(__atomic_flag_fast_path)
 			// A simple exponential back-off helper that is designed to cover the space between (1<<__magic_number_3) and __magic_number_4
 			class __atomic_exponential_backoff {
 				int microseconds = 50;
@@ -142,7 +141,6 @@ namespace std {
 					microseconds = next_microseconds < 2048 ? next_microseconds : 2048;
 				}
 			};
-#endif
 
 			enum class atomic_notify {
 				all, one, none
