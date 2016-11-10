@@ -192,7 +192,7 @@ namespace std {
                     this_thread::sleep_for(chrono::microseconds(microseconds));
                     // Avoiding the use of std::min here, to keep includes minimal
                     auto next_microseconds = microseconds + (microseconds >> 2);
-                    microseconds = next_microseconds < 2048 ? next_microseconds : 2048;
+                    microseconds = next_microseconds < 8192 ? next_microseconds : 8192;
                 }
             };
 
