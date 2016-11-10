@@ -202,7 +202,7 @@ namespace std {
 
             typedef struct atomic_flag {
 
-                typedef uint32_t __base_t;
+                typedef uint8_t __base_t;
 
                 static constexpr __base_t __valubit = 1;
 #ifdef __atomic_flag_fast_path
