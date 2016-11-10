@@ -94,66 +94,88 @@ namespace std {
                 ts.tv_nsec = static_cast<long>(chrono::duration_cast<chrono::nanoseconds>(delta).count());
                 return ts;
             }
-            inline void __atomic_wait(const void* p, int v) {
-                syscall(SYS_futex, p, FUTEX_WAIT_PRIVATE, v, 0, 0, 0);
+            template <class A>
+            inline const void* __atomic_fixalign(A& a) {
+                static_assert(sizeof(A) <= sizeof(int), "Linux only supports 'int' for Futex.");
+                return (const void*)((intptr_t)p & (sizeof(int) - 1));
             }
-            template < class Rep, class Period>
-            void __atomic_wait_timed(const void* p, int v, const chrono::duration<Rep, Period>& t) {
-                syscall(SYS_futex, p, FUTEX_WAIT_PRIVATE, v, __atomic_to_timespec(t), 0, 0);
+            inline int __atomic_readint(const void* p) {
+                int i;
+                memcpy(&i, p, sizeof(int));
+                return i;
             }
-            inline void __atomic_wake_one(const void* p) {
-                syscall(SYS_futex, p, FUTEX_WAKE_PRIVATE, 1, 0, 0, 0);
+            template <class A, class V>
+            inline void __atomic_wait(A& a, V v) {
+                auto p = __atomic_fixalign(a);
+                auto i = __atomic_readint(p);
+                asm volatile("" ::: "memory");
+                if (a.load(memory_order_relaxed) != v) return;
+                syscall(SYS_futex, p, FUTEX_WAIT_PRIVATE, i, 0, 0, 0);
             }
-            inline void __atomic_wake_all(const void* p) {
-                syscall(SYS_futex, p, FUTEX_WAKE_PRIVATE, INT_MAX, 0, 0, 0);
+            template <class A, class V, class Rep, class Period>
+            void __atomic_wait_timed(A& a, V v, const chrono::duration<Rep, Period>& t) {
+                auto p = __atomic_fixalign(a);
+                auto i = __atomic_readint(p);
+                asm volatile("" ::: "memory");
+                if (a.load(memory_order_relaxed) != v) return;
+                syscall(SYS_futex, p, FUTEX_WAIT_PRIVATE, i, __atomic_to_timespec(t), 0, 0);
             }
-            inline void __atomic_wait(const volatile void* p, int v) {
-                syscall(SYS_futex, p, FUTEX_WAIT, v, 0, 0, 0);
+            template <class A>
+            inline void __atomic_wake_one(A& a) {
+                syscall(SYS_futex, __atomic_fixalign(a), FUTEX_WAKE_PRIVATE, 1, 0, 0, 0);
             }
-            template < class Rep, class Period>
-            void __atomic_wait_timed(const volatile void* p, int v, const chrono::duration<Rep, Period>& t) {
-                syscall(SYS_futex, p, FUTEX_WAIT, v, __atomic_to_timespec(t), 0, 0);
+            template <class A>
+            inline void __atomic_wake_all(A& a) {
+                syscall(SYS_futex, __atomic_fixalign(a), FUTEX_WAKE_PRIVATE, INT_MAX, 0, 0, 0);
             }
-            inline void __atomic_wake_one(const volatile void* p) {
-                syscall(SYS_futex, p, FUTEX_WAKE, 1, 0, 0, 0);
+            template <class A, class V>
+            inline void __atomic_wait(volatile A& a, V v) {
+                auto p = __atomic_fixalign(a);
+                auto i = __atomic_readint(p);
+                asm volatile("" ::: "memory");
+                if (a.load(memory_order_relaxed) != v) return;
+                syscall(SYS_futex, p, FUTEX_WAIT, i, 0, 0, 0);
             }
-            inline void __atomic_wake_all(const volatile void* p) {
-                syscall(SYS_futex, p, FUTEX_WAKE, INT_MAX, 0, 0, 0);
+            template <class A, class V, class Rep, class Period>
+            void __atomic_wait_timed(volatile A& a, V v, const chrono::duration<Rep, Period>& t) {
+                auto p = __atomic_fixalign(a);
+                auto i = __atomic_readint(p);
+                asm volatile("" ::: "memory");
+                if (a.load(memory_order_relaxed) != v) return;
+                syscall(SYS_futex, p, FUTEX_WAIT, i, __atomic_to_timespec(t), 0, 0);
+            }
+            template <class A>
+            inline void __atomic_wake_one(volatile A& a) {
+                syscall(SYS_futex, __atomic_fixalign(a), FUTEX_WAKE, 1, 0, 0, 0);
+            }
+            template <class A>
+            inline void __atomic_wake_all(volatile A& a) {
+                syscall(SYS_futex, __atomic_fixalign(a), FUTEX_WAKE, INT_MAX, 0, 0, 0);
             }
 #define __atomic_flag_fast_path
 #endif // __linux__
 
 #if defined(WIN32) && _WIN32_WINNT >= 0x0602
             // On Windows, we make use of the kernel memory wait operations as well. These first became available with Windows 8.
-            template <class V>
-            void __atomic_wait(const void* p, V v) {
-                WaitOnAddress((PVOID)p, (PVOID)&v, sizeof(v), -1);
+            template <class A, class V>
+            void __atomic_wait(A& a, V v) {
+                static_assert(sizeof(V) <= 8, "Windows only allows sizes between 1B and 8B for WaitOnAddress.");
+                WaitOnAddress((PVOID)&a, (PVOID)&v, sizeof(v), -1);
             }
-            template <class V, class Rep, class Period>
-            void __atomic_wait_timed(const void* p, V v, chrono::duration<Rep, Period> const& delta) {
-                WaitOnAddress((PVOID)p, (PVOID)&v, sizeof(v), chrono::duration_cast<chrono::milliseconds>(delta).count());
+            template <class A, class V, class Rep, class Period>
+            void __atomic_wait_timed(A& a, V v, chrono::duration<Rep, Period> const& delta) {
+                static_assert(sizeof(V) <= 8, "Windows only allows sizes between 1B and 8B for WaitOnAddress.");
+                WaitOnAddress((PVOID)&a, (PVOID)&v, sizeof(v), chrono::duration_cast<chrono::milliseconds>(delta).count());
             }
-            inline void __atomic_wake_one(const void* p) {
-                WakeByAddressSingle((PVOID)p);
+            template <class A>
+            inline void __atomic_wake_one(A& a) {
+                WakeByAddressSingle((PVOID)&a);
             }
-            inline void __atomic_wake_all(const void* p) {
-                WakeByAddressAll((PVOID)p);
+            template <class A>
+            inline void __atomic_wake_all(A& a) {
+                WakeByAddressAll((PVOID)&a);
             }
-            // On Windows, we make use of the kernel memory wait operations as well. These first became available with Windows 8.
-            template <class V>
-            void __atomic_wait(const volatile void* p, V v) {
-                WaitOnAddress((PVOID)p, (PVOID)&v, sizeof(v), -1);
-            }
-            template <class V, class Rep, class Period>
-            void __atomic_wait_timed(const volatile void* p, V v, chrono::duration<Rep, Period> const& delta) {
-                WaitOnAddress((PVOID)p, (PVOID)&v, sizeof(v), chrono::duration_cast<chrono::milliseconds>(delta).count());
-            }
-            inline void __atomic_wake_one(const volatile void* p) {
-                WakeByAddressSingle((PVOID)p);
-            }
-            inline void __atomic_wake_all(const volatile void* p) {
-                WakeByAddressAll((PVOID)p);
-            }
+
 #define __atomic_flag_fast_path
 #endif // defined(WIN32) && _WIN32_WINNT >= 0x0602
 
@@ -199,8 +221,8 @@ namespace std {
                         if (atom.compare_exchange_weak(old, valubit | lock, order, memory_order_relaxed)) {
                             if (lock) {
                                 switch (notify) {
-                                case atomic_notify::all: __atomic_wake_all(&atom); break;
-                                case atomic_notify::one: __atomic_wake_one(&atom); break;
+                                case atomic_notify::all: __atomic_wake_all(atom); break;
+                                case atomic_notify::one: __atomic_wake_one(atom); break;
                                 case atomic_notify::none: break;
                                 }
                                 atom.fetch_and(~lock, memory_order_relaxed);
@@ -250,8 +272,8 @@ namespace std {
                         if (atom.compare_exchange_weak(old, lock, order, memory_order_relaxed)) {
                             if (lock) {
                                 switch (notify) {
-                                case atomic_notify::all: __atomic_wake_all(&atom); break;
-                                case atomic_notify::one: __atomic_wake_one(&atom); break;
+                                case atomic_notify::all: __atomic_wake_all(atom); break;
+                                case atomic_notify::one: __atomic_wake_one(atom); break;
                                 case atomic_notify::none: break;
                                 }
                                 atom.fetch_and(~lock, memory_order_relaxed);
@@ -315,7 +337,7 @@ namespace std {
                         while (1) {
                             old = atom.fetch_or(contbit, memory_order_relaxed) | contbit;
                             if ((old & valubit) == expectbit) break;
-                            __atomic_wait(&atom, old);
+                            __atomic_wait(atom, old);
                             old = atom.load(order);
                             if ((old & valubit) == expectbit) break;
                         }
@@ -410,7 +432,7 @@ namespace std {
                             auto const delay = abs_time - clock::now();
                             if (delay < 0)
                                 return false;
-                            __atomic_wait_timed(&atom, old, delay);
+                            __atomic_wait_timed(atom, old, delay);
                             old = atom.load(order);
                             if ((old & valubit) == expectbit)
                                 break;
