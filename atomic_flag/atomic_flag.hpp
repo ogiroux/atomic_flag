@@ -40,6 +40,7 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef __linux__
 #include <time.h>
+#include <cstring>
 #include <unistd.h>
 #include <linux/futex.h>
 #include <sys/syscall.h>
@@ -97,7 +98,7 @@ namespace std {
             template <class A>
             inline const void* __atomic_fixalign(A& a) {
                 static_assert(sizeof(A) <= sizeof(int), "Linux only supports 'int' for Futex.");
-                return (const void*)((intptr_t)p & (sizeof(int) - 1));
+                return (const void*)((intptr_t)&a & ~(sizeof(int) - 1));
             }
             inline int __atomic_readint(const void* p) {
                 int i;
