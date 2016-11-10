@@ -332,15 +332,9 @@ namespace std {
 #ifdef __atomic_flag_fast_path
                     if ((old & __valubit) != expectbit) {
                         while (1) {
-<<<<<<< HEAD
-                            old = atom.fetch_or(contbit, memory_order_relaxed) | contbit;
-                            if ((old & valubit) == expectbit) break;
-                            __atomic_wait(atom, old);
-=======
                             old = atom.fetch_or(__contbit, memory_order_relaxed) | __contbit;
                             if ((old & __valubit) == expectbit) break;
-                            __atomic_wait(&atom, old);
->>>>>>> origin/master
+                            __atomic_wait(atom, old);
                             old = atom.load(order);
                             if ((old & __valubit) == expectbit) break;
                         }
@@ -484,7 +478,9 @@ namespace std {
                 atomic_flag() noexcept = default;
                 atomic_flag(const atomic_flag&) = delete;
                 atomic_flag& operator=(const atomic_flag&) = delete;
+#ifndef _MSC_VER
                 atomic_flag& operator=(const atomic_flag&) volatile = delete;
+#endif
 
                 mutable std::atomic<__base_t> atom;
 
