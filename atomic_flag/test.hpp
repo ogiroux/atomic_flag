@@ -139,26 +139,26 @@ struct barrier {
     }
 private:
     int const o;
-    std::atomic<int> a = 0;
+    std::atomic<int> a{0};
     std::experimental::atomic_flag f = ATOMIC_FLAG_INIT;
 };
 
-template <class T>
-void atomic_notify(std::atomic<T>& a, 
-                   T newval, 
-                   std::experimental::atomic_flag& f,
-                   std::memory_order order = std::memory_order_seq_cst,
+template <class T, class V>
+void atomic_notify(std::experimental::atomic_flag& f,
+                   std::atomic<T>& a, 
+                   V newval, 
+                   std::memory_order order = std::memory_order_seq_cst, //this implementation can't actually make use of this operand
                    std::experimental::atomic_notify notify = std::experimental::atomic_notify::all) {
 
-    a.store(newval); //sc
-    if (__atomic_expect(f.test(),0)) //sc
+    a.store(newval); //requires sc
+    if (__atomic_expect(f.test(),0)) //requires sc
         f.set(false, std::memory_order_relaxed, notify);
 }
 
-template <class T>
-void atomic_wait(std::atomic<T>& a, 
-                 T current, 
-                 std::experimental::atomic_flag& f,
+template <class T, class V>
+void atomic_wait(std::experimental::atomic_flag& f,
+                 std::atomic<T> const& a, 
+                 V current, 
                  std::memory_order order = std::memory_order_seq_cst) {
 
     if (__atomic_expect(a.load(order) == current, 1))
@@ -167,8 +167,8 @@ void atomic_wait(std::atomic<T>& a,
         if (a.load(order) != current)
             return;
     while (1) {
-        f.set(true, std::memory_order_seq_cst, std::experimental::atomic_notify::none); //sc
-        if (a.load() != current) //sc
+        f.set(true, std::memory_order_seq_cst, std::experimental::atomic_notify::none); //requires sc
+        if (a.load() != current) //requires sc
             return;
         std::experimental::atomic_flag::__wait_slow(f.atom, false, std::memory_order_relaxed);
     }
@@ -180,17 +180,17 @@ struct alignas(64) atomic_flag_lock2 {
 
         int old = 0;
         while (!i.compare_exchange_strong(old, 1, std::memory_order_acquire)) {
-            atomic_wait(i, old, f, std::memory_order_relaxed);
+            atomic_wait(f, i, old, std::memory_order_relaxed);
             old = 0;
         }
     }
 
     void unlock() {
 
-        atomic_notify(i, 0, f, std::memory_order_release);
+        atomic_notify(f, i, 0, std::memory_order_release);
     }
 
 private:
-    std::atomic<int> i = 0;
+    std::atomic<int> i{0};
     std::experimental::atomic_flag f = ATOMIC_FLAG_INIT;
 };
