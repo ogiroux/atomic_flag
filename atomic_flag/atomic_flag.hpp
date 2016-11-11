@@ -313,6 +313,21 @@ namespace std {
                     __clear(atom, order, notify);
                 }
 
+                inline void set(bool state, memory_order order = memory_order_seq_cst, atomic_notify notify = atomic_notify::all) noexcept {
+
+                    if (state)
+                        test_and_set(order, notify);
+                    else
+                        clear(order, notify);
+                }
+                inline void set(bool state, memory_order order = memory_order_seq_cst, atomic_notify notify = atomic_notify::all) volatile noexcept {
+
+                    if (state)
+                        test_and_set(order, notify);
+                    else
+                        clear(order, notify);
+                }
+
                 template <class A>
                 __atomic_gcc_dont_inline static void __wait_slow(A& atom, bool set, memory_order order) noexcept {
 
@@ -523,6 +538,25 @@ namespace std {
             }
             inline void atomic_flag_clear_explicit_notify(atomic_flag* f, memory_order order, atomic_notify notify) noexcept {
                 f->clear(order, notify);
+            }
+
+            inline void atomic_flag_set(volatile atomic_flag* f, bool state) noexcept {
+                f->set(state);
+            }
+            inline void atomic_flag_set(atomic_flag* f, bool state) noexcept {
+                f->set(state);
+            }
+            inline void atomic_flag_set_explicit(volatile atomic_flag* f, bool state, memory_order order) noexcept {
+                f->set(state, order);
+            }
+            inline void atomic_flag_set_explicit(atomic_flag* f, bool state, memory_order order) noexcept {
+                f->set(state, order);
+            }
+            inline void atomic_flag_set_explicit_notify(volatile atomic_flag* f, bool state, memory_order order, atomic_notify notify) noexcept {
+                f->set(state, order, notify);
+            }
+            inline void atomic_flag_set_explicit_notify(atomic_flag* f, bool state, memory_order order, atomic_notify notify) noexcept {
+                f->set(state, order, notify);
             }
 
             inline bool atomic_flag_test(const volatile atomic_flag* f) noexcept {

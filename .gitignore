@@ -61,3 +61,4 @@ atomic_flag/output.csv
 *.obj
 
 atomic_flag/test
+atomic_flag/x64/Debug/atomic_flag.ilk
