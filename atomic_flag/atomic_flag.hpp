@@ -540,25 +540,6 @@ namespace std {
                 f->clear(order, notify);
             }
 
-            inline void atomic_flag_set(volatile atomic_flag* f, bool state) noexcept {
-                f->set(state);
-            }
-            inline void atomic_flag_set(atomic_flag* f, bool state) noexcept {
-                f->set(state);
-            }
-            inline void atomic_flag_set_explicit(volatile atomic_flag* f, bool state, memory_order order) noexcept {
-                f->set(state, order);
-            }
-            inline void atomic_flag_set_explicit(atomic_flag* f, bool state, memory_order order) noexcept {
-                f->set(state, order);
-            }
-            inline void atomic_flag_set_explicit_notify(volatile atomic_flag* f, bool state, memory_order order, atomic_notify notify) noexcept {
-                f->set(state, order, notify);
-            }
-            inline void atomic_flag_set_explicit_notify(atomic_flag* f, bool state, memory_order order, atomic_notify notify) noexcept {
-                f->set(state, order, notify);
-            }
-
             inline bool atomic_flag_test(const volatile atomic_flag* f) noexcept {
                 return f->test();
             }
